@@ -1,10 +1,12 @@
 import click
 import requests
 import json
+import subprocess
 
-print("It's recommended to have a Token/Api token set in the data.json file")
 
 
+return
+hasseen()
 @click.group()
 def cli():
     pass
@@ -27,7 +29,7 @@ def services():
     services = response.json()['cloud']
     for service in services:
 
-        status = service['status']
+        vmtype = type['type']
         service_hostname = service['service_hostname']
         ip = service['details']['ip']
         ipv6 = service['details']['ipv6']
@@ -35,13 +37,14 @@ def services():
         price = service['price']
         service_type_name = service['service_type_name']
 
-        print(f"Status: {status}\nService Hostname: {service_hostname}\nIP: {ip}\nIPv6: {ipv6}\nID: {service_id}\nPrice: {price}\nService Type Name: {service_type_name}\n")
+        print(f"Status: {vmtype}\nService Hostname: {service_hostname}\nIP: {ip}\nIPv6: {ipv6}\nID: {service_id}\nPrice: {price}\nService Type Name: {service_type_name}\n")
 
 
 
 @cli.command()
 @click.option('--vmid', type=int, help='Virtual machine ID')
 def vmstat(vmid):
+    """Get Statistics From a Single VM"""
     # Load authentication token from file
     with open('data.json') as f:
         auth_data = json.load(f)
@@ -80,9 +83,49 @@ def vmstat(vmid):
 
     return
 
+@cli.command()
+def token():
+    """Set your token"""
+
+    # Prompt the user for input
+    input_str = input("Enter the token: ")
+
+    # Check if the input string is 36 characters long
+    if len(input_str) == 36:
+        # Read the existing JSON file or create an empty dictionary
+        try:
+            with open("data.json", "r") as f:
+                data = json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            data = {}
+
+        # Update the dictionary with the new token value
+        data["token"] = input_str
+
+        # Write the updated dictionary to the JSON file
+        with open("data.json", "w") as f:
+            json.dump(data, f)
+
+        print("Token written to data.json. All commands should work now.")
+    else:
+        print("Input string is not 36 characters long.")
 
 
 
 
+@cli.command()
+def ping():
+    """View your ping to Xenyth's servers"""
+    hostname = "spdtst.xenyth.net"
+    ping = subprocess.Popen(
+        ["ping", hostname],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE
+    )
+    out, error = ping.communicate()
+    if error:
+        click.echo("Ping Error: {}".format(error.decode("utf-8")))
+    else:
+        click.echo(out.decode("utf-8"))
 if __name__ == '__main__':
     cli()
