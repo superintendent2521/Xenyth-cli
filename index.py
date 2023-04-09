@@ -4,9 +4,6 @@ import json
 import subprocess
 
 
-
-return
-hasseen()
 @click.group()
 def cli():
     pass
