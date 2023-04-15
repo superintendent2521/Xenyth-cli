@@ -2,15 +2,23 @@ import click
 import requests
 import json
 import subprocess
-
-
+from datetime import datetime
+import time
+##########################################
+#                                       #
+#   Python dependencies ^^^^^           #
+#            ignore them                #
+#                                       #
+#                                       #
+#                                       #
+##########################################
 @click.group()
 def cli():
     pass
 
 @cli.command()
 def services():
-    """Get a list of cloud services from the Xenyth dashboard API"""
+    """Get a list of cloud services from the Xenyth dashboard"""
 
     # Load authentication token from file
     with open('data.json') as f:
@@ -19,14 +27,16 @@ def services():
 
     # Set up API endpoint URL and headers
     url = 'https://dashboard.xenyth.net/api/services/cloud/list'
-    headers = {'Authorization': f'Bearer {token}'}
-
+    headers = {
+    'Authorization': f'Bearer {token}',
+    'User-Agent': 'xenyth-cli/1.0'
+    }
     # Make GET request to API and extract relevant fields from response
     response = requests.get(url, headers=headers)
     services = response.json()['cloud']
     for service in services:
 
-        vmtype = type['type']
+
         service_hostname = service['service_hostname']
         ip = service['details']['ip']
         ipv6 = service['details']['ipv6']
@@ -34,7 +44,7 @@ def services():
         price = service['price']
         service_type_name = service['service_type_name']
 
-        print(f"Status: {vmtype}\nService Hostname: {service_hostname}\nIP: {ip}\nIPv6: {ipv6}\nID: {service_id}\nPrice: {price}\nService Type Name: {service_type_name}\n")
+        print(f"\nService Hostname: {service_hostname}\nIP: {ip}\nIPv6: {ipv6}\nID: {service_id}\nPrice: {price}\nService Type Name: {service_type_name}\n")
 
 
 
@@ -49,8 +59,10 @@ def vmstat(vmid):
 
     # Set up API endpoint URL and headers
     url = f'https://dashboard.xenyth.net/api/services/cloud/{vmid}'
-    headers = {'Authorization': f'Bearer {token}'}
-
+    headers = {
+    'Authorization': f'Bearer {token}',
+    'User-Agent': 'xenyth-cli/1.0'
+    }
     # Make GET request to API and extract relevant fields from response
     response = requests.get(url, headers=headers)
     json_response = response.json()
@@ -105,7 +117,7 @@ def token():
 
         print("Token written to data.json. All commands should work now.")
     else:
-        print("Input string is not 36 characters long.")
+        print("Token string is not 36 characters long.")
 
 
 
@@ -124,5 +136,82 @@ def ping():
         click.echo("Ping Error: {}".format(error.decode("utf-8")))
     else:
         click.echo(out.decode("utf-8"))
+
+
+@cli.command()
+def ticketlist():
+    """Lists All Tickets"""
+    print("Fetching Ticket info, Please Standby")
+    # Load authentication token from file
+    with open('data.json') as f:
+        auth_data = json.load(f)
+        token = auth_data['token']
+
+    # Set up API endpoint URL and headers
+    url = f'https://dashboard.xenyth.net/api/tickets/list'
+    headers = {
+    'Authorization': f'Bearer {token}',
+    'User-Agent': 'xenyth-cli/1.0'
+    }
+    # Make GET request to API and extract relevant fields from response
+    response = requests.get(url, headers=headers)
+    print("this can and will flood your terminal if you have large ammounts of tickets as it shows EVERY ticket That was opened/closed, You have been warned and there is a 3 second wait")
+    time.sleep(2)
+    if response.status_code == 200:
+        json_response = response.json()
+
+        # Iterate through the list of tickets and print the desired fields
+        for ticket in json_response:
+            ticket_id = ticket['id']
+            status = ticket['status']
+            status_text = ticket['statustext']
+            title = ticket['title']
+           
+
+            print(f"ID: {ticket_id}")
+            print(f"Status: {status}")
+            print(f"Status Text: {status_text}")
+            print(f"Title: {title}")
+            print("\n")
+    else:
+        print("Error: Unable to fetch ticket information.")
+
+
+@cli.command()
+@click.option('--ticket', type=int, help='Ticket ID')
+
+def ticketinfo(ticket):
+    """Get Ticket Thread info"""
+    # Load authentication token from file
+    with open('data.json') as f:
+        auth_data = json.load(f)
+        token = auth_data['token']
+
+    # Set up API endpoint URL and headers
+    url = f'https://dashboard.xenyth.net/api/tickets/{ticket}'
+    headers = {
+    'Authorization': f'Bearer {token}',
+    'User-Agent': 'xenyth-cli/1.0'
+} 
+
+    # Make GET request to API and extract relevant fields from response
+    response = requests.get(url, headers=headers)
+    json_response = response.json()
+
+    # Print required fields
+    print(f"ID: {json_response['id']}")
+    print(f"Status Text: {json_response['statustext']}")
+    print(f"Title: {json_response['title']}")
+    print(f"Agent: {json_response['agent']}")
+
+    # Print replies with content and author
+    print("\nReplies:")
+    for reply in json_response['replies']:
+        print(f"Content: {reply['content']}")
+        print(f"Author: {reply['author']}")
+        print()
+
+#stfu python no one loves you
 if __name__ == '__main__':
     cli()
+
